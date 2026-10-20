@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Beginning Letter Game - M and N</title>
+  
+  <!-- Google Fonts: Balsamiq Sans -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Balsamiq+Sans:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            balsamiq: ['"Balsamiq Sans"', 'cursive', 'sans-serif'],
+          },
+          colors: {
+            brandYellow: '#FFD166',
+            brandOrange: '#FF9F1C',
+            brandGreen: '#06D6A0',
+            brandRed: '#EF476F',
+            brandBlue: '#118AB2',
+            brandPurple: '#073B4C',
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* Global styles for SmartBoard and elementary UI */
+    * {
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+      touch-action: manipulation;
+    }
+    
+    body, html {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      font-family: 'Balsamiq Sans', cursive, sans-serif;
+      background-color: #073B4C;
+    }
+
+    /* Screen Container Backgrounds */
+    .bg-home-custom {
+      background-image: url('homescreen.png');
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+    }
+
+    .bg-game-custom {
+      background-image: url('gamescreen.png');
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+    }
+
+    /* Subtle Bounce Animation for interactive buttons */
+    @keyframes subtlePulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.03); }
+    }
+
+    .animate-pulse-subtle {
+      animation: subtlePulse 2s infinite ease-in-out;
+    }
+
+    /* Success / Shake animations */
+    @keyframes popSuccess {
+      0% { transform: scale(0.8); opacity: 0; }
+      50% { transform: scale(1.2); opacity: 1; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    .animate-pop-success {
+      animation: popSuccess 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    }
+
+    @keyframes shakeError {
+      0%, 100% { transform: translateX(0); }
+      20%, 60% { transform: translateX(-15px); }
+      40%, 80% { transform: translateX(15px); }
+    }
+
+    .animate-shake {
+      animation: shakeError 0.5s ease-in-out;
+    }
+
+    /* Glassmorphism card overlays */
+    .glass-card {
+      background: rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(8px);
+      border: 4px solid rgba(255, 255, 255, 0.9);
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2);
+    }
+  </style>
+</head>
+<body class="font-balsamiq text-slate-800 h-screen w-screen relative select-none">
+
+  <!-- ================= TOP RIGHT TOOLBAR (Fullscreen Button) ================= -->
+  <div class="absolute top-4 right-4 z-50">
+    <button id="fullscreenBtn" onclick="toggleFullscreen()" class="bg-white/90 hover:bg-white text-slate-800 p-3 rounded-2xl shadow-lg border-2 border-slate-200 transition-all active:scale-95 flex items-center justify-center focus:outline-none" title="Toggle Fullscreen">
+      <!-- Maximize Icon -->
+      <svg id="fullscreenIcon" class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 8V4m0 0h4M4 4l5 5m11-5h-4m4 0v4m0-4l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+      </svg>
+    </button>
+  </div>
+
+  <!-- ================= 1. HOME SCREEN ================= -->
+  <section id="homeScreen" class="absolute inset-0 bg-home-custom bg-emerald-500 flex flex-col items-center justify-center p-6 z-20">
+    <!-- Fallback Title Box if homescreen.png doesn't have text -->
+    <div class="glass-card p-8 md:p-12 rounded-3xl max-w-2xl w-full text-center space-y-8 animate-pulse-subtle">
+      <div class="space-y-2">
+        <h1 class="text-4xl md:text-6xl font-black text-brandPurple tracking-wide drop-shadow-sm">
+          Letter Sounds!
+        </h1>
+        <p class="text-2xl md:text-3xl font-bold text-brandBlue">
+          Listen & Tap <span class="text-brandRed">M</span> or <span class="text-brandGreen">N</span>
+        </p>
+      </div>
+
+      <!-- Play / Start Button -->
+      <button onclick="startGame()" class="w-full py-5 px-8 bg-brandYellow hover:bg-yellow-400 text-brandPurple font-black text-3xl md:text-5xl rounded-3xl border-b-8 border-yellow-600 shadow-xl active:translate-y-1 active:border-b-4 transition-all flex items-center justify-center space-x-4 group">
+        <span>START GAME</span>
+        <svg class="w-10 h-10 group-hover:scale-110 transition-transform" fill="currentColor" viewBox="0 0 20 20">
+          <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" />
+        </svg>
+      </button>
+    </div>
+  </section>
+
+  <!-- ================= 2. GAMEPLAY SCREEN ================= -->
+  <section id="gameScreen" class="absolute inset-0 bg-game-custom bg-sky-400 hidden flex-col justify-between p-4 md:p-8 z-10">
+    
+    <!-- HUD Header (Score & Timer) -->
+    <header class="w-full max-w-5xl mx-auto flex justify-between items-center z-10">
+      <!-- Score Display -->
+      <div class="glass-card px-6 py-3 rounded-2xl flex items-center space-x-3 border-4 border-emerald-400">
+        <span class="text-xl md:text-2xl font-bold text-slate-600">SCORE:</span>
+        <span id="scoreText" class="text-3xl md:text-5xl font-black text-brandGreen">0</span>
+      </div>
+
+      <!-- Center Audio Replay Button -->
+      <button id="replayBtn" onclick="replayCurrentAudio()" class="bg-brandYellow hover:bg-yellow-300 text-brandPurple p-4 md:p-5 rounded-full shadow-xl border-4 border-white active:scale-95 transition-transform flex items-center justify-center animate-bounce" title="Listen Again">
+        <svg class="w-10 h-10 md:w-12 md:h-12" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/>
+        </svg>
+      </button>
+
+      <!-- Timer Display -->
+      <div class="glass-card px-6 py-3 rounded-2xl flex items-center space-x-3 border-4 border-amber-400">
+        <span class="text-xl md:text-2xl font-bold text-slate-600">TIME:</span>
+        <span id="timerText" class="text-3xl md:text-5xl font-black text-brandOrange">60</span>
+      </div>
+    </header>
+
+    <!-- Main Choice Display Area -->
+    <main id="choicesContainer" class="w-full max-w-5xl mx-auto my-auto grid grid-cols-2 gap-4 md:gap-12 px-2 md:px-8">
+      
+      <!-- Option M Card -->
+      <div id="optionM" onclick="handleAnswer('M')" class="choice-card glass-card rounded-3xl p-4 md:p-8 cursor-pointer flex flex-col items-center justify-center hover:scale-105 active:scale-95 transition-all border-8 border-transparent hover:border-brandBlue/40 min-h-[220px] md:min-h-[360px] relative group shadow-2xl">
+        <img src="Mm.png" alt="Letter M" class="max-h-[180px] md:max-h-[280px] w-auto object-contain pointer-events-none" onerror="this.style.display='none'; document.getElementById('badgeM').style.display='flex';">
+        <!-- Fallback Styled Badge if Mm.png missing -->
+        <div id="badgeM" class="hidden w-40 h-40 md:w-60 md:h-60 rounded-3xl bg-brandBlue text-white text-6xl md:text-8xl font-black items-center justify-center shadow-inner">
+          Mm
+        </div>
+      </div>
+
+      <!-- Option N Card -->
+      <div id="optionN" onclick="handleAnswer('N')" class="choice-card glass-card rounded-3xl p-4 md:p-8 cursor-pointer flex flex-col items-center justify-center hover:scale-105 active:scale-95 transition-all border-8 border-transparent hover:border-brandGreen/40 min-h-[220px] md:min-h-[360px] relative group shadow-2xl">
+        <img src="Nn.png" alt="Letter N" class="max-h-[180px] md:max-h-[280px] w-auto object-contain pointer-events-none" onerror="this.style.display='none'; document.getElementById('badgeN').style.display='flex';">
+        <!-- Fallback Styled Badge if Nn.png missing -->
+        <div id="badgeN" class="hidden w-40 h-40 md:w-60 md:h-60 rounded-3xl bg-brandGreen text-white text-6xl md:text-8xl font-black items-center justify-center shadow-inner">
+          Nn
+        </div>
+      </div>
+
+    </main>
+
+    <!-- Visual Feedback Notification Banner Overlay -->
+    <div id="feedbackOverlay" class="absolute inset-x-0 top-1/2 -translate-y-1/2 pointer-events-none hidden justify-center items-center z-30">
+      <div id="feedbackBadge" class="px-10 py-6 rounded-3xl text-white font-black text-4xl md:text-6xl shadow-2xl flex items-center space-x-4 border-4 border-white">
+        <!-- Dynamic text/icon inserted via JS -->
+      </div>
+    </div>
+
+  </section>
+
+  <!-- ================= 3. GAME OVER SCREEN ================= -->
+  <section id="gameOverScreen" class="absolute inset-0 bg-slate-900/90 backdrop-blur-md hidden flex-col items-center justify-center p-6 z-40">
+    <div class="glass-card p-8 md:p-12 rounded-3xl max-w-xl w-full text-center space-y-6 animate-pop-success">
+      <h2 class="text-4xl md:text-6xl font-black text-brandPurple">TIME'S UP!</h2>
+      
+      <div class="py-4">
+        <p class="text-2xl text-slate-600 font-bold mb-2">YOUR FINAL SCORE</p>
+        <div class="inline-block bg-amber-100 border-4 border-brandYellow px-8 py-4 rounded-3xl">
+          <span id="finalScoreText" class="text-6xl md:text-8xl font-black text-brandOrange">0</span>
+        </div>
+      </div>
+
+      <button onclick="restartGame()" class="w-full py-5 px-8 bg-brandGreen hover:bg-emerald-400 text-white font-black text-3xl md:text-4xl rounded-3xl border-b-8 border-emerald-700 shadow-xl active:translate-y-1 active:border-b-4 transition-all">
+        PLAY AGAIN
+      </button>
+    </div>
+  </section>
+
+  <!-- ================= JAVASCRIPT GAME LOGIC ================= -->
+  <script>
+    /* ----------------------------------------------------
+       1. VOCABULARY & STATE CONFIGURATION
+    ---------------------------------------------------- */
+    const VOCABULARY_LIST = [
+      { word: 'mat',    file: 'mat.mp3',    letter: 'M' },
+      { word: 'milk',   file: 'milk.mp3',   letter: 'M' },
+      { word: 'monkey', file: 'monkey.mp3', letter: 'M' },
+      { word: 'net',    file: 'net.mp3',    letter: 'N' },
+      { word: 'neck',   file: 'neck.mp3',   letter: 'N' },
+      { word: 'nose',   file: 'nose.mp3',   letter: 'N' }
+    ];
+
+    let currentQuestion = null;
+    let previousWord = '';
+    let score = 0;
+    let timeLeft = 60;
+    let timerInterval = null;
+    let isQuestionLocked = false;
+    let audioContext = null;
+
+    // Audio Player References
+    const vocabAudio = new Audio();
+    const bgmAudio = new Audio('bgm.mp3');
+    bgmAudio.loop = true;
+    bgmAudio.volume = 0.1;
+
+    /* ----------------------------------------------------
+       2. AUDIO SYNTHESIS / SOUND EFFECT GENERATORS
+    ---------------------------------------------------- */
+    // Initialize Web Audio API for rich audio synthesis
+    function initAudioContext() {
+      if (!audioContext) {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (AudioCtx) {
+          audioContext = new AudioCtx();
+        }
+      }
+      if (audioContext && audioContext.state === 'suspended') {
+        audioContext.resume();
+      }
+    }
+
+    // Play Multi-Harmonic Synthesized Pleasant Chime (Correct Answer)
+    function playChimeSound() {
+      initAudioContext();
+      if (!audioContext) return;
+
+      const now = audioContext.currentTime;
+      
+      // Major triad arpeggio chime (C5, E5, G5, C6) for a bright, rewarding chime
+      const notes = [523.25, 659.25, 783.99, 1046.50];
+      
+      notes.forEach((freq, index) => {
+        const noteTime = now + (index * 0.08);
+        
+        const osc = audioContext.createOscillator();
+        const gain = audioContext.createGain();
+
+        // Sine wave for smooth marimba-like / bell tone
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, noteTime);
+
+        // Quick attack, smooth exponential decay
+        gain.gain.setValueAtTime(0.001, noteTime);
+        gain.gain.linearRampToValueAtTime(0.25, noteTime + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.001, noteTime + 0.45);
+
+        osc.connect(gain);
+        gain.connect(audioContext.destination);
+
+        osc.start(noteTime);
+        osc.stop(noteTime + 0.5);
+      });
+    }
+
+    // Play Synthesized Soft Buzzing Sound (Incorrect Answer)
+    function playBuzzerSound() {
+      initAudioContext();
+      if (!audioContext) return;
+
+      const now = audioContext.currentTime;
+
+      const osc1 = audioContext.createOscillator();
+      const osc2 = audioContext.createOscillator();
+      const gain = audioContext.createGain();
+
+      // Sawtooth and Square waves combined for a friendly low-pitched "buzz/boop"
+      osc1.type = 'sawtooth';
+      osc2.type = 'square';
+
+      // Low frequencies for error feedback (130Hz detuned with 138Hz)
+      osc1.frequency.setValueAtTime(130, now);
+      osc2.frequency.setValueAtTime(138, now);
+
+      // Pitch drop effect over duration
+      osc1.frequency.exponentialRampToValueAtTime(90, now + 0.3);
+      osc2.frequency.exponentialRampToValueAtTime(95, now + 0.3);
+
+      gain.gain.setValueAtTime(0.2, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+
+      osc1.connect(gain);
+      osc2.connect(gain);
+      gain.connect(audioContext.destination);
+
+      osc1.start(now);
+      osc2.start(now);
+      osc1.stop(now + 0.35);
+      osc2.stop(now + 0.35);
+    }
+
+    // Web Speech API fallback for spoken words if mp3 missing
+    function speakFallbackWord(text) {
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = 'en-US';
+        utterance.rate = 0.85;
+        window.speechSynthesis.speak(utterance);
+      }
+    }
+
+    // Play word audio file with graceful speech synthesis fallback
+    function playVocabAudio(file, wordText) {
+      initAudioContext();
+      vocabAudio.src = file;
+      
+      // Duck background music slightly while vocabulary plays
+      if (!bgmAudio.paused) bgmAudio.volume = 0.03;
+
+      const playPromise = vocabAudio.play();
+      if (playPromise !== undefined) {
+        playPromise.then(() => {
+          // Audio started playing successfully
+        }).catch(() => {
+          // Fallback to Web Speech API if file missing or audio blocked
+          speakFallbackWord(wordText);
+        });
+      }
+
+      vocabAudio.onended = () => {
+        if (!bgmAudio.paused) bgmAudio.volume = 0.1;
+      };
+    }
+
+    /* ----------------------------------------------------
+       3. GAMEPLAY FLOW & LOGIC
+    ---------------------------------------------------- */
+    function startGame() {
+      initAudioContext();
+
+      // UI Screen Transition
+      document.getElementById('homeScreen').classList.add('hidden');
+      document.getElementById('homeScreen').classList.remove('flex');
+      document.getElementById('gameScreen').classList.remove('hidden');
+      document.getElementById('gameScreen').classList.add('flex');
+      document.getElementById('gameOverScreen').classList.add('hidden');
+
+      // Reset State
+      score = 0;
+      timeLeft = 60;
+      previousWord = '';
+      isQuestionLocked = false;
+      document.getElementById('scoreText').innerText = score;
+      document.getElementById('timerText').innerText = timeLeft;
+
+      // Start Background Music
+      bgmAudio.currentTime = 0;
+      bgmAudio.play().catch(() => { /* Handled silently if blocked */ });
+
+      // Start Countdown Timer
+      clearInterval(timerInterval);
+      timerInterval = setInterval(updateTimer, 1000);
+
+      // Load First Question
+      nextQuestion();
+    }
+
+    function updateTimer() {
+      timeLeft--;
+      document.getElementById('timerText').innerText = timeLeft;
+
+      if (timeLeft <= 0) {
+        endGame();
+      }
+    }
+
+    // Select Next Question with No-Repeat Logic
+    function nextQuestion() {
+      isQuestionLocked = false;
+
+      // Filter out the previously played word
+      let availableWords = VOCABULARY_LIST.filter(item => item.word !== previousWord);
+      
+      // Random selection
+      const randomIndex = Math.floor(Math.random() * availableWords.length);
+      currentQuestion = availableWords[randomIndex];
+      previousWord = currentQuestion.word;
+
+      // Play corresponding word audio
+      playVocabAudio(currentQuestion.file, currentQuestion.word);
+    }
+
+    function replayCurrentAudio() {
+      if (currentQuestion) {
+        playVocabAudio(currentQuestion.file, currentQuestion.word);
+      }
+    }
+
+    /* ----------------------------------------------------
+       4. ANSWER FEEDBACK & VERIFICATION
+    ---------------------------------------------------- */
+    function handleAnswer(selectedLetter) {
+      if (isQuestionLocked) return;
+
+      const feedbackOverlay = document.getElementById('feedbackOverlay');
+      const feedbackBadge = document.getElementById('feedbackBadge');
+
+      if (selectedLetter === currentQuestion.letter) {
+        // --- CORRECT ANSWER ---
+        isQuestionLocked = true; // Lock question against double taps
+        score++;
+        document.getElementById('scoreText').innerText = score;
+
+        // Play Synthesized Chime Sound
+        playChimeSound();
+
+        // Show Success Feedback Overlay
+        feedbackBadge.className = "px-10 py-6 rounded-3xl text-white font-black text-4xl md:text-6xl shadow-2xl flex items-center space-x-4 border-4 border-white bg-brandGreen animate-pop-success";
+        feedbackBadge.innerHTML = `
+          <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="4" d="M5 13l4 4L19 7"/>
+          </svg>
+          <span>CORRECT!</span>
+        `;
+        feedbackOverlay.classList.remove('hidden');
+        feedbackOverlay.classList.add('flex');
+
+        // Advance to Next Question after short delay
+        setTimeout(() => {
+          feedbackOverlay.classList.add('hidden');
+          feedbackOverlay.classList.remove('flex');
+          nextQuestion();
+        }, 1100);
+
+      } else {
+        // --- INCORRECT ANSWER ---
+        // Play Synthesized Buzzing Sound
+        playBuzzerSound();
+
+        // Shake the chosen option card for wrong answer
+        const optionCard = document.getElementById(`option${selectedLetter}`);
+        optionCard.classList.add('animate-shake');
+        
+        setTimeout(() => {
+          optionCard.classList.remove('animate-shake');
+        }, 500);
+
+        // Show Retry Overlay briefly without revealing answer or locking state
+        feedbackBadge.className = "px-10 py-6 rounded-3xl text-white font-black text-4xl md:text-6xl shadow-2xl flex items-center space-x-4 border-4 border-white bg-brandRed animate-pop-success";
+        feedbackBadge.innerHTML = `
+          <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="4" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+          <span>TRY AGAIN!</span>
+        `;
+        feedbackOverlay.classList.remove('hidden');
+        feedbackOverlay.classList.add('flex');
+
+        setTimeout(() => {
+          feedbackOverlay.classList.add('hidden');
+          feedbackOverlay.classList.remove('flex');
+        }, 800);
+      }
+    }
+
+    /* ----------------------------------------------------
+       5. GAME OVER & RESTART
+    ---------------------------------------------------- */
+    function endGame() {
+      clearInterval(timerInterval);
+      isQuestionLocked = true;
+
+      // Stop Audio
+      vocabAudio.pause();
+      bgmAudio.pause();
+
+      // Update Final Score
+      document.getElementById('finalScoreText').innerText = score;
+
+      // Show Game Over Overlay
+      document.getElementById('gameOverScreen').classList.remove('hidden');
+      document.getElementById('gameOverScreen').classList.add('flex');
+    }
+
+    function restartGame() {
+      startGame();
+    }
+
+    /* ----------------------------------------------------
+       6. FULLSCREEN TOGGLE API
+    ---------------------------------------------------- */
+    function toggleFullscreen() {
+      if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+        const docEl = document.documentElement;
+        if (docEl.requestFullscreen) {
+          docEl.requestFullscreen();
+        } else if (docEl.webkitRequestFullscreen) {
+          docEl.webkitRequestFullscreen();
+        }
+      } else {
+        if (document.exitFullscreen) {
+          document.exitFullscreen();
+        } else if (document.webkitExitFullscreen) {
+          document.webkitExitFullscreen();
+        }
+      }
+    }
+  </script>
+</body>
+</html>
